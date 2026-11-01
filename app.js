@@ -33,7 +33,7 @@
   let cursor = 0;
   let undoStack = [];
   let redoStack = [];
-  let settings = {size: 56, frames: false, face: 'font'};
+  let settings = {size: 56, face: 'font'};
   let lastLayout = null;
 
   // ---------- раскладка ----------
@@ -163,12 +163,6 @@
         c.strokeStyle = '#b8442e'; c.lineWidth = 1.5;
         c.strokeRect(it.x + 1, it.y + 1, it.advance - 2, it.h - 2);
         c.beginPath(); c.moveTo(it.x, it.y); c.lineTo(it.x + it.advance, it.y + it.h); c.stroke();
-      }
-      if (settings.frames) {
-        c.strokeStyle = '#8c8578'; c.lineWidth = 1;
-        const top = L.lineTop(it.line) + m.lineHeight * 0.04;
-        c.strokeRect(Math.round(it.x - m.gap / 2) + 0.5, Math.round(top) + 0.5,
-          Math.round(it.advance + m.gap), Math.round(m.lineHeight * 0.92));
       }
       if (bad.has(i)) {
         c.strokeStyle = '#b8442e'; c.lineWidth = 2;
@@ -307,7 +301,7 @@
       documentKind: 'author-text',
       direction: {inline: 'rtl', lines: 'bottom-to-top'},
       mode: 'full',
-      settings: {size: settings.size, frames: settings.frames, face: settings.face},
+      settings: {size: settings.size, face: settings.face},
       tokens: tokens.map(t => t.type === 'glyph' ? {type: 'glyph', assetId: t.assetId} : {type: t.type}),
     };
   }
@@ -331,7 +325,6 @@
       tokens: out,
       settings: {
         size: Number.isFinite(s.size) ? Math.min(120, Math.max(28, s.size)) : settings.size,
-        frames: typeof s.frames === 'boolean' ? s.frames : settings.frames,
         face: s.face === 'photo' || s.face === 'font' ? s.face : settings.face,
       },
     };
@@ -435,9 +428,6 @@
       if (t.type !== 'glyph') return;
       const it = L.info[i];
       parts.push(`<use href="#g${t.assetId}" data-index="${i}" transform="translate(${r(it.x)} ${r(it.y)}) scale(${r(m.scale * 1000) / 1000})"/>`);
-      if (settings.frames) {
-        parts.push(`<rect x="${r(it.x - m.gap / 2)}" y="${r(L.lineTop(it.line) + m.lineHeight * 0.04)}" width="${r(it.advance + m.gap)}" height="${r(m.lineHeight * 0.92)}" fill="none" stroke="#8c8578"/>`);
-      }
     });
     parts.push('</svg>');
     download(`текст_${stamp()}.svg`, new Blob([parts.join('\n')], {type: 'image/svg+xml'}));
@@ -478,35 +468,77 @@
     p.textContent = g.meaning + (g.variantOf ? ` Вероятный повтор ${g.variantOf}.` : '');
     text.append(title, p);
     box.append(img, text);
+    box.title = `${g.id} · ${g.name}. ${p.textContent}`;
   }
 
   function buildKeyboard() {
-    // одна панель со своей прокруткой; повторные образцы (variant) на клавиатуру не выводятся,
-    // но остаются в каталоге, чтобы открывались старые документы
-    const order = {letter: 0, punctuation: 1};
-    const list = glyphs.filter(g => g.kind in order).sort((a, b) => order[a.kind] - order[b.kind]);
-    const grid = document.createElement('div');
-    grid.className = 'keys';
-    for (const g of list) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'key' + (g.endsText ? ' end' : '');
-      btn.title = `${g.id} · ${g.name}`;
-      btn.setAttribute('aria-label', `Знак ${g.id}, ${g.name}`);
+    // как стикерпаки: группы в одной прокрутке, заголовки прилипают, сверху полоска групп.
+    // Повторные образцы (variant) на клавиатуру не выводятся, но остаются в каталоге,
+    // чтобы открывались старые документы.
+    const groups = [
+      {title: 'Буквы', icon: '3-7', list: glyphs.filter(g => g.kind === 'letter')},
+      {title: 'Пунктуация', icon: '1-4', list: glyphs.filter(g => g.kind === 'punctuation')},
+    ];
+    const root = $('keyboard');
+    const packs = document.createElement('div');
+    packs.className = 'packs';
+    const scroll = document.createElement('div');
+    scroll.className = 'kb-scroll';
+    const sections = groups.map(group => {
+      const sec = document.createElement('section');
+      sec.className = 'kb-group';
+      const h = document.createElement('h2');
+      h.textContent = group.title;
+      const grid = document.createElement('div');
+      grid.className = 'keys';
+      for (const g of group.list) grid.appendChild(keyButton(g));
+      sec.append(h, grid);
+      scroll.appendChild(sec);
+
+      const pack = document.createElement('button');
+      pack.type = 'button';
+      pack.className = 'pack';
+      pack.title = group.title;
+      pack.setAttribute('aria-label', group.title);
       const img = document.createElement('img');
-      img.src = face(g).src; img.alt = '';
-      img.dataset.glyph = g.id;
-      const small = document.createElement('small');
-      small.textContent = g.id;
-      btn.append(img, small);
-      // фокус остаётся в редакторе, чтобы клавиатура продолжала работать
-      btn.addEventListener('pointerdown', e => e.preventDefault());
-      btn.addEventListener('click', () => { insert({type: 'glyph', assetId: g.id}); showInfo(g); buzz(); scroller.focus({preventScroll: true}); });
-      btn.addEventListener('mouseenter', () => showInfo(g));
-      btn.addEventListener('focus', () => showInfo(g));
-      grid.appendChild(btn);
-    }
-    $('keyboard').appendChild(grid);
+      img.src = face(registry[group.icon]).src; img.alt = '';
+      img.dataset.glyph = group.icon;
+      pack.appendChild(img);
+      pack.addEventListener('pointerdown', e => e.preventDefault());
+      pack.addEventListener('click', () => { scroll.scrollTo({top: sec.offsetTop - scroll.offsetTop, behavior: 'smooth'}); });
+      packs.appendChild(pack);
+      return {sec, pack};
+    });
+    const markActive = () => {
+      const y = scroll.scrollTop + 8;
+      let active = 0;
+      sections.forEach((s, i) => { if (s.sec.offsetTop - scroll.offsetTop <= y) active = i; });
+      if (scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 2) active = sections.length - 1;
+      sections.forEach((s, i) => s.pack.classList.toggle('active', i === active));
+    };
+    scroll.addEventListener('scroll', markActive, {passive: true});
+    root.append(packs, scroll);
+    markActive();
+  }
+
+  function keyButton(g) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'key' + (g.endsText ? ' end' : '');
+    btn.title = `${g.id} · ${g.name}`;
+    btn.setAttribute('aria-label', `Знак ${g.id}, ${g.name}`);
+    const img = document.createElement('img');
+    img.src = face(g).src; img.alt = '';
+    img.dataset.glyph = g.id;
+    const small = document.createElement('small');
+    small.textContent = g.id;
+    btn.append(img, small);
+    // фокус остаётся в редакторе, чтобы клавиатура продолжала работать
+    btn.addEventListener('pointerdown', e => e.preventDefault());
+    btn.addEventListener('click', () => { insert({type: 'glyph', assetId: g.id}); showInfo(g); buzz(); scroller.focus({preventScroll: true}); });
+    btn.addEventListener('mouseenter', () => showInfo(g));
+    btn.addEventListener('focus', () => showInfo(g));
+    return btn;
   }
 
   function buzz() {
@@ -520,7 +552,6 @@
 
   function syncSettingsUI() {
     $('sizeInput').value = settings.size;
-    $('framesInput').checked = settings.frames;
     $('faceInput').value = settings.face;
   }
 
@@ -548,7 +579,6 @@
       e.target.value = '';
     });
     $('sizeInput').addEventListener('input', e => { settings.size = +e.target.value; changed(); });
-    $('framesInput').addEventListener('change', e => { settings.frames = e.target.checked; changed(); });
     $('faceInput').addEventListener('change', e => {
       settings.face = e.target.value;
       document.querySelectorAll('img[data-glyph]').forEach(img => { img.src = face(registry[img.dataset.glyph]).src; });
