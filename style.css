@@ -9,20 +9,23 @@
   --warn: #b8442e;
   --warn-bg: #fbeee9;
   --key-hover: #f1ede4;
+  --key-down: #e6e0d3;
   color-scheme: light;
 }
 * { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
 .wrap { max-width: 1180px; margin: 0 auto; padding: 18px 16px 40px; }
 
-.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 h1 { font-size: 22px; margin: 0 0 2px; }
 .sub { margin: 0 0 12px; color: var(--muted); }
-.status { font-size: 13px; color: var(--muted); padding-top: 6px; }
+.status { font-size: 13px; color: var(--muted); padding-top: 6px; text-align: right; }
+.menu-btn { display: none; }
 
-button { font: inherit; cursor: pointer; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 7px 11px; }
-button:hover { background: var(--key-hover); }
-button:active { transform: translateY(1px); }
+button { font: inherit; cursor: pointer; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 7px 11px; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+button:active { background: var(--key-down); }
+@media (hover: hover) { button:hover { background: var(--key-hover); } }
 button:focus-visible, .editor:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .toolbar, .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 10px; }
@@ -30,8 +33,9 @@ button:focus-visible, .editor:focus-visible { outline: 2px solid var(--accent); 
 .opt { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); }
 .opt input[type=range] { width: 110px; }
 .hint { font-size: 13px; color: var(--muted); }
+.touch-only, .tabs { display: none; }
 
-.editor { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; height: 46vh; min-height: 220px; overflow-x: hidden; overflow-y: scroll; cursor: text; }
+.editor { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; height: 46vh; min-height: 220px; overflow-x: hidden; overflow-y: scroll; cursor: text; touch-action: pan-y; }
 .editor.focused { border-color: var(--accent); }
 .editor canvas { display: block; }
 
@@ -51,15 +55,90 @@ button:focus-visible, .editor:focus-visible { outline: 2px solid var(--accent); 
 .group h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 14px 0 6px; font-weight: 600; }
 .keys { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 7px; }
 .key { position: relative; height: 78px; padding: 6px 4px 14px; display: flex; align-items: center; justify-content: center; border-radius: 9px; }
-.key img { max-width: 100%; max-height: 54px; pointer-events: none; }
+.key img { max-width: 100%; max-height: 54px; pointer-events: none; -webkit-user-drag: none; }
 .key small { position: absolute; bottom: 2px; left: 0; right: 0; font-size: 10px; color: var(--muted); }
 .key.end::after { content: ""; position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
 
 .foot { margin-top: 22px; font-size: 12px; color: var(--muted); }
 
-@media (max-width: 520px) {
-  .keys { grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); }
-  .key { height: 66px; }
-  .key img { max-height: 44px; }
-  .sep { display: none; }
+/* ---------- телефон и планшет: экран-приложение ---------- */
+@media (max-width: 900px), (pointer: coarse) {
+  html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+  .wrap {
+    height: 100vh; height: 100dvh; max-width: none; display: flex; flex-direction: column;
+    padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  }
+  .top { align-items: center; gap: 8px; margin-bottom: 6px; }
+  .titles { min-width: 0; flex: none; }
+  h1 { font-size: 17px; margin: 0; white-space: nowrap; }
+  .sub, .hint, .foot, .desk-only { display: none; }
+  .status { flex: 1; min-width: 0; padding: 0; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .menu-btn { display: block; flex: none; width: 44px; height: 40px; padding: 0; font-size: 22px; line-height: 1; }
+  .menu-btn[aria-expanded=true] { background: var(--key-down); }
+
+  .toolbar { display: none; margin: 0 0 8px; padding: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+  .toolbar.open { display: flex; }
+  .toolbar button { padding: 9px 12px; }
+  .toolbar .sep { display: none; }
+  .opt { width: 100%; }
+  .opt input[type=range] { flex: 1; width: auto; }
+  .opt input[type=checkbox] { width: 20px; height: 20px; }
+
+  .workspace { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+  .pane-text { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .editor { flex: 1; height: auto; min-height: 110px; border-radius: 10px; }
+  .messages { margin: 6px 0 0; padding: 5px 10px; font-size: 13px; max-height: 3.6em; overflow-y: auto; }
+
+  .pane-keys { flex: none; display: flex; flex-direction: column; min-height: 0; }
+  .controls { margin: 0 0 6px; gap: 6px; flex-wrap: nowrap; }
+  .ctl { flex: 1; min-height: 44px; padding: 0 6px; font-size: 18px; }
+  .ctl-space { flex: 2.4; font-size: 15px; }
+  .ctl .lbl { display: none; }
+  .touch-only { display: inline-block; }
+
+  .info { min-height: 0; height: 40px; gap: 8px; padding: 2px 10px; margin: 0 0 6px; font-size: 12px; overflow: hidden; }
+  .info img { height: 30px; }
+  .info > div { min-width: 0; }
+  .info > div > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .info b { font-size: 13px; }
+  .badge { font-size: 11px; }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: 6px; }
+  .tabs button { flex: 1; padding: 7px 4px; font-size: 13px; border-radius: 8px; }
+  .tabs button[aria-selected=true] { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .keyboard { height: 36vh; height: 36dvh; min-height: 120px; overflow-y: auto; overscroll-behavior: contain; }
+  .group { display: none; }
+  .group.active { display: block; }
+  .group h2 { display: none; }
+  .keys { grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; }
+  .key { height: 58px; padding: 4px 3px 12px; }
+  .key img { max-height: 40px; }
+  .key small { font-size: 9px; bottom: 1px; }
+}
+
+/* планшет: клавиатура крупнее */
+@media (pointer: coarse) and (min-width: 700px) and (orientation: portrait) {
+  .keys { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+  .key { height: 76px; }
+  .key img { max-height: 54px; }
+  .keyboard { height: 32dvh; }
+  .ctl { min-height: 50px; }
+}
+
+/* альбомная ориентация: текст слева, знаки справа */
+@media (max-width: 900px) and (orientation: landscape), (pointer: coarse) and (orientation: landscape) {
+  .workspace { flex-direction: row; }
+  .pane-text { flex: 1 1 55%; }
+  .pane-keys { flex: 1 1 45%; max-width: 560px; }
+  .keyboard { flex: 1; height: auto; min-height: 0; }
+  .keys { grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  h1 { font-size: 15px; }
+  .top { margin-bottom: 4px; }
+  .menu-btn { height: 34px; }
+  .info { display: none; }
+  .ctl { min-height: 38px; }
+  .key { height: 50px; }
+  .key img { max-height: 34px; }
 }
