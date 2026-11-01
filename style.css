@@ -33,7 +33,7 @@ button:focus-visible, .editor:focus-visible { outline: 2px solid var(--accent); 
 .opt { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); }
 .opt input[type=range] { width: 110px; }
 .hint { font-size: 13px; color: var(--muted); }
-.touch-only, .tabs { display: none; }
+.touch-only { display: none; }
 
 .editor { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; height: 46vh; min-height: 220px; overflow-x: hidden; overflow-y: scroll; cursor: text; touch-action: pan-y; }
 .editor.focused { border-color: var(--accent); }
@@ -52,9 +52,17 @@ button:focus-visible, .editor:focus-visible { outline: 2px solid var(--accent); 
 .badge { display: inline-block; font-size: 12px; padding: 1px 7px; border-radius: 10px; background: var(--guide); color: var(--muted); margin-left: 6px; }
 .badge.unresolved, .badge.inference { background: var(--warn-bg); color: var(--warn); }
 
-.group h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 14px 0 6px; font-weight: 600; }
-.keys { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 7px; }
-.key { position: relative; height: 78px; padding: 6px 4px 14px; display: flex; align-items: center; justify-content: center; border-radius: 9px; }
+/* панель знаков как панель стикеров: одна сетка, своя прокрутка */
+.keyboard {
+  height: 300px; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 6px;
+  scrollbar-width: thin; scrollbar-color: #c9c2b5 transparent;
+}
+.keyboard::-webkit-scrollbar { width: 8px; }
+.keyboard::-webkit-scrollbar-thumb { background: #c9c2b5; border-radius: 4px; border: 2px solid var(--panel); }
+.keyboard::-webkit-scrollbar-track { background: transparent; }
+.keys { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 2px; }
+.key { position: relative; height: 78px; padding: 6px 4px 14px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border-color: transparent; background: transparent; }
 .key img { max-width: 100%; max-height: 54px; pointer-events: none; -webkit-user-drag: none; }
 .key small { position: absolute; bottom: 2px; left: 0; right: 0; font-size: 10px; color: var(--muted); }
 .key.end::after { content: ""; position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
@@ -103,14 +111,8 @@ button:focus-visible, .editor:focus-visible { outline: 2px solid var(--accent); 
   .info b { font-size: 13px; }
   .badge { font-size: 11px; }
 
-  .tabs { display: flex; gap: 4px; margin-bottom: 6px; }
-  .tabs button { flex: 1; padding: 7px 4px; font-size: 13px; border-radius: 8px; }
-  .tabs button[aria-selected=true] { background: var(--ink); color: #fff; border-color: var(--ink); }
-  .keyboard { height: 36vh; height: 36dvh; min-height: 120px; overflow-y: auto; overscroll-behavior: contain; }
-  .group { display: none; }
-  .group.active { display: block; }
-  .group h2 { display: none; }
-  .keys { grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; }
+  .keyboard { height: 38vh; height: 38dvh; min-height: 120px; padding: 4px; border-radius: 10px; }
+  .keys { grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 2px; }
   .key { height: 58px; padding: 4px 3px 12px; }
   .key img { max-height: 40px; }
   .key small { font-size: 9px; bottom: 1px; }
@@ -118,7 +120,7 @@ button:focus-visible, .editor:focus-visible { outline: 2px solid var(--accent); 
 
 /* планшет: клавиатура крупнее */
 @media (pointer: coarse) and (min-width: 700px) and (orientation: portrait) {
-  .keys { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+  .keys { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 4px; }
   .key { height: 76px; }
   .key img { max-height: 54px; }
   .keyboard { height: 32dvh; }

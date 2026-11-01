@@ -14,7 +14,6 @@
 
   const SCHEMA_VERSION = '0.1';
   const STORAGE_KEY = 'author-script-editor.v1';
-  const TAB_KEY = 'author-script-editor.tab';
   const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
   const SOURCE_UNIT = 100; // высота «типичной» ячейки исходника в px
 
@@ -482,65 +481,32 @@
   }
 
   function buildKeyboard() {
-    const groups = [
-      ['Пунктуация', g => g.kind === 'punctuation'],
-      ['Буквы', g => g.kind === 'letter'],
-      ['Повторные образцы', g => g.kind !== 'punctuation' && g.kind !== 'letter'],
-    ];
-    const root = $('keyboard');
-    const tabs = $('tabs');
-    const sections = [];
-    let saved = null;
-    try { saved = localStorage.getItem(TAB_KEY); } catch (e) { /* без запоминания */ }
-    const selectTab = i => {
-      sections.forEach((sec, k) => {
-        sec.el.classList.toggle('active', k === i);
-        sec.tab.setAttribute('aria-selected', String(k === i));
-      });
-      root.scrollTop = 0;
-      try { localStorage.setItem(TAB_KEY, sections[i].title); } catch (e) { /* без запоминания */ }
-    };
-    for (const [title, pred] of groups) {
-      const list = glyphs.filter(pred);
-      if (!list.length) continue;
-      const sec = document.createElement('div');
-      sec.className = 'group';
-      const tab = document.createElement('button');
-      tab.type = 'button';
-      tab.setAttribute('role', 'tab');
-      tab.textContent = title.startsWith('Повторные') ? 'Варианты' : title;
-      const n = sections.length;
-      tab.addEventListener('click', () => selectTab(n));
-      tabs.appendChild(tab);
-      sections.push({title, el: sec, tab});
-      const h = document.createElement('h2');
-      h.textContent = title;
-      const grid = document.createElement('div');
-      grid.className = 'keys';
-      for (const g of list) {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'key' + (g.endsText ? ' end' : '');
-        btn.title = `${g.id} · ${g.name}`;
-        btn.setAttribute('aria-label', `Знак ${g.id}, ${g.name}`);
-        const img = document.createElement('img');
-        img.src = face(g).src; img.alt = '';
-        img.dataset.glyph = g.id;
-        const small = document.createElement('small');
-        small.textContent = g.id;
-        btn.append(img, small);
-        // фокус остаётся в редакторе, чтобы клавиатура продолжала работать
-        btn.addEventListener('pointerdown', e => e.preventDefault());
-        btn.addEventListener('click', () => { insert({type: 'glyph', assetId: g.id}); showInfo(g); buzz(); scroller.focus({preventScroll: true}); });
-        btn.addEventListener('mouseenter', () => showInfo(g));
-        btn.addEventListener('focus', () => showInfo(g));
-        grid.appendChild(btn);
-      }
-      sec.append(h, grid);
-      root.appendChild(sec);
+    // одна панель со своей прокруткой; повторные образцы (variant) на клавиатуру не выводятся,
+    // но остаются в каталоге, чтобы открывались старые документы
+    const order = {letter: 0, punctuation: 1};
+    const list = glyphs.filter(g => g.kind in order).sort((a, b) => order[a.kind] - order[b.kind]);
+    const grid = document.createElement('div');
+    grid.className = 'keys';
+    for (const g of list) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'key' + (g.endsText ? ' end' : '');
+      btn.title = `${g.id} · ${g.name}`;
+      btn.setAttribute('aria-label', `Знак ${g.id}, ${g.name}`);
+      const img = document.createElement('img');
+      img.src = face(g).src; img.alt = '';
+      img.dataset.glyph = g.id;
+      const small = document.createElement('small');
+      small.textContent = g.id;
+      btn.append(img, small);
+      // фокус остаётся в редакторе, чтобы клавиатура продолжала работать
+      btn.addEventListener('pointerdown', e => e.preventDefault());
+      btn.addEventListener('click', () => { insert({type: 'glyph', assetId: g.id}); showInfo(g); buzz(); scroller.focus({preventScroll: true}); });
+      btn.addEventListener('mouseenter', () => showInfo(g));
+      btn.addEventListener('focus', () => showInfo(g));
+      grid.appendChild(btn);
     }
-    const first = sections.findIndex(x => x.title === saved);
-    selectTab(first >= 0 ? first : sections.findIndex(x => x.title === 'Буквы'));
+    $('keyboard').appendChild(grid);
   }
 
   function buzz() {
