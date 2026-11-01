@@ -94,6 +94,14 @@ def build(entry):
     img = Image.open(PKG / entry["source_crop_png"])
     if "crop" in entry:
         img = img.crop(entry["crop"])
+    if "scale" in entry:
+        # close-up photo: shrink to the A16 cell size and pad to a 100px tall cell, glyph centred
+        k = entry["scale"]
+        img = img.convert("RGB").resize((round(img.width * k), round(img.height * k)), Image.LANCZOS)
+        paper = sorted(img.get_flattened_data(), key=max)[img.width * img.height // 2]
+        cell = Image.new("RGB", (img.width + 8, 100), paper)
+        cell.paste(img, (4, (100 - img.height) // 2))
+        img = cell
     alpha = drop_edge_traces(ink_alpha(img))
     w, h = alpha.size
     bbox = alpha.getbbox() or (0, 0, w, h)
@@ -131,7 +139,7 @@ def vector(gid):
     return {"width": w, "height": h, "src": "data:image/svg+xml;base64," + base64.b64encode(big.encode()).decode()}
 
 
-# Not in the A16 catalog: the question mark from A13, confirmed missing by the author.
+# Not in the A16 catalog, added by the author later: the question mark and the letter P.
 EXTRA = [{
     "after": "1-3",
     "asset_id": "a13-1",
@@ -145,6 +153,19 @@ EXTRA = [{
     # author's notebook photo, line «2 = ?»
     "source_crop_png": ROOT / "ref" / "5420165835143192436.jpg",
     "crop": (205, 985, 272, 1072),
+}, {
+    "after": "4-7",
+    "asset_id": "ref-1",
+    "row": 4,
+    "kind": "letter",
+    "name_ru": "Буква P / П",
+    "meaning_ru": "Соответствует P/p и П/п. Добавлена по отдельному фото автора (ref).",
+    "meaning_status": "author_confirmed",
+    "variant_of_candidate": None,
+    "suggested_character_id": "l.p",
+    "source_crop_png": ROOT / "ref" / "5420165835143193053.jpg",
+    "crop": (222, 614, 490, 800),
+    "scale": 0.36,
 }]
 
 
