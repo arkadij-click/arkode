@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Авторская письменность</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="wrap">
+  <header class="top">
+    <div>
+      <h1>Авторская письменность</h1>
+      <p class="sub">Первый знак — внизу справа, следующие левее, новая строка — выше. Это наборщик знаков, не переводчик.</p>
+    </div>
+    <div class="status" id="saveStatus" aria-live="polite"></div>
+  </header>
+
+  <section class="toolbar" aria-label="Документ">
+    <button type="button" data-action="undo" title="Ctrl+Z">↶ Отменить</button>
+    <button type="button" data-action="redo" title="Ctrl+Y / Ctrl+Shift+Z">↷ Вернуть</button>
+    <span class="sep"></span>
+    <button type="button" data-action="clear">Очистить</button>
+    <button type="button" data-action="open">Открыть JSON…</button>
+    <button type="button" data-action="save">Сохранить JSON</button>
+    <button type="button" data-action="png">PNG</button>
+    <button type="button" data-action="svg">SVG</button>
+    <input type="file" id="fileInput" accept=".json,application/json" hidden>
+    <span class="sep"></span>
+    <label class="opt">Размер <input type="range" id="sizeInput" min="28" max="120" step="2" value="56"></label>
+    <label class="opt"><input type="checkbox" id="framesInput"> Рамки</label>
+  </section>
+
+  <div class="editor" id="editorScroll" tabindex="0" aria-label="Текст. Стрелки двигают курсор, Backspace удаляет, Enter — новая строка вверх, пробел — пробел.">
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <div class="messages" id="messages" aria-live="polite"></div>
+
+  <section class="controls" aria-label="Служебные клавиши">
+    <button type="button" class="ctl" data-action="space">Пробел</button>
+    <button type="button" class="ctl" data-action="linebreak">↥ Новая строка</button>
+    <button type="button" class="ctl" data-action="backspace">⌫ Удалить</button>
+    <span class="hint">Курсор: щелчок по тексту или стрелки. ← идёт дальше по тексту, → назад.</span>
+  </section>
+
+  <div class="info" id="info"><span class="muted">Наведите или нажмите на знак, чтобы увидеть его описание.</span></div>
+
+  <section id="keyboard" class="keyboard" aria-label="Знаки"></section>
+
+  <footer class="foot" id="foot"></footer>
+</main>
+<script src="glyphs.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
