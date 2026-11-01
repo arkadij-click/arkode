@@ -22,6 +22,8 @@
   const glyphs = set.glyphs;
   const registry = Object.fromEntries(glyphs.map(g => [g.id, g]));
   const images = {};
+  // начертание: 'font' — прорисовка, 'photo' — очищенное фото A16
+  const face = g => g[settings.face] || g.font;
 
   const $ = id => document.getElementById(id);
   const canvas = $('canvas');
@@ -32,7 +34,7 @@
   let cursor = 0;
   let undoStack = [];
   let redoStack = [];
-  let settings = {size: 56, frames: false};
+  let settings = {size: 56, frames: false, face: 'font'};
   let lastLayout = null;
 
   // ---------- раскладка ----------
@@ -70,8 +72,8 @@
       if (t.type === 'space') advance = m.spaceAdvance;
       else {
         const g = registry[t.assetId];
-        advance = g ? g.width * m.scale : m.lineHeight * 0.6;
-        h = g ? g.height * m.scale : m.lineHeight * 0.8;
+        advance = g ? face(g).width * m.scale : m.lineHeight * 0.6;
+        h = g ? face(g).height * m.scale : m.lineHeight * 0.8;
       }
       let row = rows[rows.length - 1];
       if (row.length && used + m.gap + advance > maxAdvance) {
@@ -154,7 +156,7 @@
     tokens.forEach((t, i) => {
       if (t.type !== 'glyph') return;
       const it = L.info[i];
-      const img = images[t.assetId];
+      const img = images[settings.face][t.assetId];
       if (img && img.complete && img.naturalWidth) {
         c.drawImage(img, it.x, it.y, it.advance, it.h);
       } else {
@@ -213,7 +215,7 @@
     }
     const glyphCount = tokens.filter(t => t.type === 'glyph').length;
     $('foot').textContent = `Знаков: ${glyphCount} · токенов: ${tokens.length} · строк: ${L.lineCount} · курсор: ${cursor}` +
-      ` · каталог ${set.catalogVersion}, графика: ${set.source}`;
+      ` · каталог ${set.catalogVersion}, графика: ${set.faces[settings.face]}`;
   }
 
   // ---------- правка с историей ----------
@@ -306,7 +308,7 @@
       documentKind: 'author-text',
       direction: {inline: 'rtl', lines: 'bottom-to-top'},
       mode: 'full',
-      settings: {size: settings.size, frames: settings.frames},
+      settings: {size: settings.size, frames: settings.frames, face: settings.face},
       tokens: tokens.map(t => t.type === 'glyph' ? {type: 'glyph', assetId: t.assetId} : {type: t.type}),
     };
   }
@@ -331,6 +333,7 @@
       settings: {
         size: Number.isFinite(s.size) ? Math.min(120, Math.max(28, s.size)) : settings.size,
         frames: typeof s.frames === 'boolean' ? s.frames : settings.frames,
+        face: s.face === 'photo' || s.face === 'font' ? s.face : settings.face,
       },
     };
   }
@@ -426,7 +429,7 @@
       `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${L.width}" height="${L.height}" viewBox="0 0 ${L.width} ${L.height}">`,
       `<rect width="100%" height="100%" fill="#fff"/>`,
       '<defs>',
-      ...used.map(id => `<image id="g${id}" width="${registry[id].width}" height="${registry[id].height}" href="${registry[id].src}"/>`),
+      ...used.map(id => { const f = face(registry[id]); return `<image id="g${id}" width="${f.width}" height="${f.height}" href="${f.src}"/>`; }),
       '</defs>',
     ];
     tokens.forEach((t, i) => {
@@ -462,7 +465,7 @@
     const box = $('info');
     box.textContent = '';
     const img = document.createElement('img');
-    img.src = g.src; img.alt = '';
+    img.src = face(g).src; img.alt = '';
     const text = document.createElement('div');
     const title = document.createElement('div');
     const b = document.createElement('b');
@@ -521,7 +524,8 @@
         btn.title = `${g.id} · ${g.name}`;
         btn.setAttribute('aria-label', `Знак ${g.id}, ${g.name}`);
         const img = document.createElement('img');
-        img.src = g.src; img.alt = '';
+        img.src = face(g).src; img.alt = '';
+        img.dataset.glyph = g.id;
         const small = document.createElement('small');
         small.textContent = g.id;
         btn.append(img, small);
@@ -551,6 +555,7 @@
   function syncSettingsUI() {
     $('sizeInput').value = settings.size;
     $('framesInput').checked = settings.frames;
+    $('faceInput').value = settings.face;
   }
 
   const actions = {
@@ -578,6 +583,11 @@
     });
     $('sizeInput').addEventListener('input', e => { settings.size = +e.target.value; changed(); });
     $('framesInput').addEventListener('change', e => { settings.frames = e.target.checked; changed(); });
+    $('faceInput').addEventListener('change', e => {
+      settings.face = e.target.value;
+      document.querySelectorAll('img[data-glyph]').forEach(img => { img.src = face(registry[img.dataset.glyph]).src; });
+      changed();
+    });
 
     scroller.addEventListener('focus', () => scroller.classList.add('focused'));
     scroller.addEventListener('blur', () => scroller.classList.remove('focused'));
@@ -620,12 +630,15 @@
   }
 
   function loadImages() {
-    return Promise.all(glyphs.map(g => new Promise(resolve => {
-      const img = new Image();
-      img.onload = img.onerror = () => resolve();
-      img.src = g.src;
-      images[g.id] = img;
-    })));
+    return Promise.all(Object.keys(set.faces).flatMap(name => {
+      images[name] = {};
+      return glyphs.map(g => new Promise(resolve => {
+        const img = new Image();
+        img.onload = img.onerror = () => resolve();
+        img.src = g[name].src;
+        images[name][g.id] = img;
+      }));
+    }));
   }
 
   if (window.innerWidth < 600) settings.size = 44;
