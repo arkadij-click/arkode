@@ -530,9 +530,7 @@
     const img = document.createElement('img');
     img.src = face(g).src; img.alt = '';
     img.dataset.glyph = g.id;
-    const small = document.createElement('small');
-    small.textContent = g.id;
-    btn.append(img, small);
+    btn.append(img);
     // фокус остаётся в редакторе, чтобы клавиатура продолжала работать
     btn.addEventListener('pointerdown', e => e.preventDefault());
     btn.addEventListener('click', () => { insert({type: 'glyph', assetId: g.id}); showInfo(g); buzz(); scroller.focus({preventScroll: true}); });
