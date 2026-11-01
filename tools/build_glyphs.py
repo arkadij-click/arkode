@@ -92,6 +92,8 @@ def drop_edge_traces(alpha):
 
 def build(entry):
     img = Image.open(PKG / entry["source_crop_png"])
+    if "crop" in entry:
+        img = img.crop(entry["crop"])
     alpha = drop_edge_traces(ink_alpha(img))
     w, h = alpha.size
     bbox = alpha.getbbox() or (0, 0, w, h)
@@ -129,10 +131,31 @@ def vector(gid):
     return {"width": w, "height": h, "src": "data:image/svg+xml;base64," + base64.b64encode(big.encode()).decode()}
 
 
+# Not in the A16 catalog: the question mark from A13, confirmed missing by the author.
+EXTRA = [{
+    "after": "1-3",
+    "asset_id": "a13-1",
+    "row": 1,
+    "kind": "punctuation",
+    "name_ru": "Вопрос",
+    "meaning_ru": "Вопросительный знак. Форма из тетради автора (ref, «2 = ?»); на листе A16 его не было, автор подтвердил, что он нужен.",
+    "meaning_status": "author_confirmed",
+    "variant_of_candidate": None,
+    "suggested_character_id": "p.question",
+    # author's notebook photo, line «2 = ?»
+    "source_crop_png": ROOT / "ref" / "5420165835143192436.jpg",
+    "crop": (205, 985, 272, 1072),
+}]
+
+
 def main():
     catalog = json.loads((PKG / "catalog" / "glyphs.json").read_text(encoding="utf-8"))
+    entries = list(catalog["glyphs"])
+    for extra in EXTRA:
+        at = next(i for i, e in enumerate(entries) if e["asset_id"] == extra["after"]) + 1
+        entries.insert(at, extra)
     images, glyphs = [], []
-    for entry in catalog["glyphs"]:
+    for entry in entries:
         im, g = build(entry)
         g["font"] = vector(g["id"])
         images.append((g["id"], im))

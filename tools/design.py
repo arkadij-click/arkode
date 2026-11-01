@@ -136,6 +136,11 @@ def g_1_3():  # восклицание: петля, ствол, отвод вп�
     return [loop_top(), path(f"M19,{T + 9}V{B}L42,{B - 22}")]
 
 
+def g_a13_1():  # вопрос (ref, «2 = ?»): замкнутая петля сверху, спуск влево, черта по основанию
+    r = 12
+    return [circle(18, T + r, r), path(f"M30,{T + r}C30,{T + 34} 12,{B - 13} 3,{B}H42")]
+
+
 def g_1_4():  # точка: верхняя петля слева, ствол, нижняя петля справа
     r = 11
     return [loop_top(), line(19, T + 9, 19, B), circle(19 + r, B - r, r)]
@@ -201,8 +206,8 @@ def g_2_7():  # T/D: Z с двумя кружками
     return [poly((0, T), (50, T), (0, B), (50, B)), circle(12, T + 15, 7.5), circle(38, B - 15, 7.5)]
 
 
-def g_2_8():  # L: ствол с крючком вправо наверху
-    return [path(f"M4,{B}V{T + 10}Q4,{T} 14,{T}H26")]
+def g_2_8():  # L: ствол, наверху плавно загибается вправо и чуть вниз (ʃ, не Г)
+    return [path(f"M5,{B}V{T + 16}C5,{T + 2} 20,{T - 2} 27,{T + 8}")]
 
 
 def g_3_1():  # e: обратная E с двумя точками
@@ -231,13 +236,15 @@ def g_3_6():  # i: черта, ствол из середины, две точк
 
 
 def g_3_7():  # снежинка S/С/З: шестилучевая звезда (не X)
-    cx, cy, h = 24, M, (B - T) / 2
-    dx = h * math.tan(math.radians(35))
-    return [line(cx, T, cx, B), line(cx - dx, T + 2, cx + dx, B - 2), line(cx + dx, T + 2, cx - dx, B - 2)]
+    cx, cy, r = 26, M, 25
+    dx, dy = r * math.sin(math.radians(55)), r * math.cos(math.radians(55))
+    return [line(cx, T - 2, cx, B + 2), line(cx - dx, cy - dy, cx + dx, cy + dy), line(cx + dx, cy - dy, cx - dx, cy + dy)]
 
 
-def g_3_8():  # B: широкий овал с двумя перекладинами
-    return [rrect(0, T - 1, 78, B - T + 2, 24), line(0, 45, 78, 45), line(0, 62, 78, 62)]
+def g_3_8():  # B: почти круглый овал с двумя перекладинами
+    cx, cy, rx, ry = 33, (T + B) / 2, 33, 29
+    chord = lambda y: rx * math.sqrt(1 - ((y - cy) / ry) ** 2)
+    return [ellipse(cx, cy, rx, ry)] + [line(cx - chord(y), y, cx + chord(y), y) for y in (44, 61)]
 
 
 def g_3_9():  # прямоугольник с верхней полосой и двумя точками
